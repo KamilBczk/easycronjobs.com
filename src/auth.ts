@@ -58,7 +58,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async signIn({ account, profile, user }) {
       // Exemple: créer une équipe par défaut au 1er login
-      if (account && user) {
+      if (account && user && user.id) {
         const count = await prisma.teamMember.count({
           where: { userId: user.id },
         });

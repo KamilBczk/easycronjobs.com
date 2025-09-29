@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formDataToJobUpdate, jobToFormData } from "@/lib/job-utils";
+import { JobStatus } from "@prisma/client";
 
 // GET /api/jobs - Récupérer tous les jobs de l'utilisateur
 export async function GET() {
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
         teamId: team.id,
         name: "Nouveau job",
         description: "Job en cours de création",
-        status: "DISABLED",
+        status: JobStatus.DISABLED,
         categoryId: null, // Pas de catégorie pour l'instant
 
         // Valeurs par défaut pour les champs requis

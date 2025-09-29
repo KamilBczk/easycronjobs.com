@@ -46,8 +46,8 @@ const SidebarContent = React.forwardRef<
 SidebarContent.displayName = "SidebarContent";
 
 const SidebarNav = React.forwardRef<
-  HTMLNavElement,
-  React.HTMLAttributes<HTMLNavElement>
+  HTMLElement,
+  React.HTMLAttributes<HTMLElement>
 >(({ className, ...props }, ref) => (
   <nav
     ref={ref}

@@ -22,9 +22,9 @@ export function jobToFormData(job: Job & { category?: JobCategory | null }): Job
     api: {
       method: job.apiMethod as any,
       url: job.apiUrl,
-      auth: (job.apiAuth as AuthConfig) || { type: "none" },
-      queryParams: (job.apiQueryParams as KeyValuePair[]) || [],
-      headers: (job.apiHeaders as KeyValuePair[]) || [],
+      auth: (job.apiAuth as unknown as AuthConfig) || { type: "none" },
+      queryParams: (job.apiQueryParams as unknown as KeyValuePair[]) || [],
+      headers: (job.apiHeaders as unknown as KeyValuePair[]) || [],
       body: job.apiBody || "",
       bodyType: job.apiBodyType as "json" | "form" | "raw",
       timeout: job.apiTimeout,

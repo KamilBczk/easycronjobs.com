@@ -36,7 +36,6 @@ export function JobLogsPanel() {
                 id="auto-refresh"
                 checked={autoRefresh}
                 onCheckedChange={setAutoRefresh}
-                size="sm"
               />
               <Label
                 htmlFor="auto-refresh"

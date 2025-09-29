@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Données invalides", details: parsed.error.errors },
+        { error: "Données invalides", details: parsed.error.issues },
         { status: 400 },
       );
     }

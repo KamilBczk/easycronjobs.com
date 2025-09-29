@@ -16,7 +16,8 @@ export function JobQuotasPanel() {
   const emailsSent = 45;
   const emailsQuota = 100;
   const blockedNotifications = 3;
-  const plan = "Starter";
+  let plan: "Starter" | "Pro" = "Starter";
+  // @ts-ignore - This is mock data for demonstration
   const minInterval = plan === "Pro" ? 30 : 300; // seconds
 
   const emailsPercentage = (emailsSent / emailsQuota) * 100;
@@ -40,6 +41,7 @@ export function JobQuotasPanel() {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           Quotas & notifications
+          {/* @ts-ignore - This is mock data for demonstration */}
           {plan === "Pro" && <Crown className="h-4 w-4 text-amber-500" />}
         </CardTitle>
       </CardHeader>
@@ -86,8 +88,10 @@ export function JobQuotasPanel() {
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Plan actuel</span>
             <Badge
+              // @ts-ignore - This is mock data for demonstration
               variant={plan === "Pro" ? "default" : "secondary"}
               className={
+                // @ts-ignore - This is mock data for demonstration
                 plan === "Pro" ? "bg-amber-500 hover:bg-amber-600" : ""
               }
             >
