@@ -1,6 +1,7 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useJobForm } from "@/hooks/use-job-form";
 import { JobDetailHeader } from "@/components/job-detail-header";
 import { SchedulerBlock } from "@/components/scheduler-block";
@@ -12,6 +13,16 @@ import { JobLogsPanel } from "@/components/job-logs-panel";
 import { JobHistoryPanel } from "@/components/job-history-panel";
 import { JobAuditPanel } from "@/components/job-audit-panel";
 import { JobDangerZone } from "@/components/job-danger-zone";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface JobDetailPageProps {
   params: Promise<{
@@ -21,6 +32,10 @@ interface JobDetailPageProps {
 
 export default function JobDetailPage({ params }: JobDetailPageProps) {
   const { id } = use(params);
+  const router = useRouter();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const {
     formState,
     isLoading,
@@ -59,9 +74,19 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     URL.revokeObjectURL(url);
   };
 
-  const handleDelete = () => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce job ?")) {
-      deleteJob();
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    const result = await deleteJob();
+    if (result.success) {
+      setShowDeleteDialog(false);
+      router.push("/app/schedule");
+    } else {
+      console.error("Delete failed:", result.error);
+      setIsDeleting(false);
     }
   };
 
@@ -93,7 +118,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
         onToggleStatus={toggleJobStatus}
         onDuplicate={duplicateJob}
         onExport={handleExport}
-        onDelete={handleDelete}
+        onDelete={handleDeleteClick}
       />
 
       <div className="flex-1 p-6">
@@ -139,11 +164,33 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
               isEnabled={formState.data.status === "enabled"}
               onToggleStatus={toggleJobStatus}
               onDuplicate={duplicateJob}
-              onDelete={handleDelete}
+              onDelete={handleDeleteClick}
             />
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce job ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le job "{formState.data.name}" sera définitivement supprimé ainsi que tout son historique d'exécution.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
