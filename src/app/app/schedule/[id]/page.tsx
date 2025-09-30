@@ -184,7 +184,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               {isDeleting ? "Suppression..." : "Supprimer"}
             </AlertDialogAction>

@@ -19,16 +19,6 @@ export function JobDangerZone({
   onDuplicate,
   onDelete,
 }: JobDangerZoneProps) {
-  const handleDelete = () => {
-    if (
-      confirm(
-        "Êtes-vous sûr de vouloir supprimer ce job ? Cette action est irréversible."
-      )
-    ) {
-      onDelete();
-    }
-  };
-
   return (
     <Card className="border-red-200">
       <CardHeader>
@@ -49,7 +39,7 @@ export function JobDangerZone({
               perdues.
             </div>
           </div>
-          <Button variant="destructive" size="sm" onClick={handleDelete}>
+          <Button variant="destructive" size="sm" onClick={onDelete}>
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
