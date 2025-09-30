@@ -419,14 +419,53 @@ export function useJobForm(jobId?: string) {
 
   const toggleJobStatus = useCallback(async () => {
     const newStatus = formState.data.status === "enabled" ? "disabled" : "enabled";
-    updateField("status", newStatus);
+
+    // Mettre à jour l'état local immédiatement pour le feedback UI
+    setFormState((prev) => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        status: newStatus,
+      },
+    }));
 
     // Sauvegarder automatiquement si le job existe
     if (formState.data.id) {
-      return await saveForm();
+      try {
+        const response = await fetch(`/api/jobs/${formState.data.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formState.data,
+            status: newStatus,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Erreur lors de la sauvegarde");
+        }
+
+        const result = await response.json();
+        return { success: true, job: result.job };
+      } catch (error) {
+        console.error("Erreur lors du toggle status:", error);
+        // Rollback en cas d'erreur
+        setFormState((prev) => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            status: formState.data.status,
+          },
+        }));
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Erreur lors de la sauvegarde"
+        };
+      }
     }
     return { success: true };
-  }, [formState.data.status, formState.data.id, updateField, saveForm]);
+  }, [formState.data]);
 
   const duplicateJob = useCallback(async () => {
     if (!formState.data.id) return { success: false, error: "Job non sauvegardé" };

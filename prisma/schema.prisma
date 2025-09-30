@@ -15,39 +15,42 @@ datasource db {
 /// https://authjs.dev/reference/prisma-adapter
 
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String?   @unique
-  emailVerified  DateTime?
-  image          String?
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
   // Ajout pour Credentials:
-  passwordHash   String?   // null si login uniquement via OAuth
+  passwordHash  String? // null si login uniquement via OAuth
+  isAdmin       Boolean   @default(false) // Pour accès admin
 
-  accounts       Account[]
-  sessions       Session[]
+  accounts Account[]
+  sessions Session[]
 
   // Multi-tenant:
-  teamMembers    TeamMember[]
-  createdTeams   Team[]       @relation("TeamCreator")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  teamMembers  TeamMember[]
+  createdTeams Team[]       @relation("TeamCreator")
+  // Blog:
+  blogPosts    BlogPost[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Account {
-  id                String   @id @default(cuid())
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String? @db.Text
   session_state     String?
 
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -64,6 +67,7 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+
   @@unique([identifier, token])
 }
 
@@ -81,11 +85,23 @@ model Team {
   slug        String        @unique
   createdById String?
   createdBy   User?         @relation("TeamCreator", fields: [createdById], references: [id])
+
+  // Subscription Stripe
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?   @unique
+  stripePriceId          String?
+  stripeCurrentPeriodEnd DateTime?
+  subscriptionStatus     String? // trialing, active, canceled, past_due, incomplete, incomplete_expired
+  trialEndsAt            DateTime?
+
   members     TeamMember[]
   categories  JobCategory[]
   jobs        Job[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
 }
 
 model TeamMember {
@@ -119,64 +135,64 @@ enum JobStatus {
 }
 
 model Job {
-  id            String       @id @default(cuid())
-  teamId        String
-  categoryId    String?
-  name          String
-  description   String?
-  status        JobStatus    @default(ENABLED)
+  id          String    @id @default(cuid())
+  teamId      String
+  categoryId  String?
+  name        String
+  description String?
+  status      JobStatus @default(ENABLED)
 
   // Schedule configuration
-  scheduleMode      String   @default("preset") // "preset" | "cron"
-  schedulePreset    String?  // "daily", "hourly", etc.
-  cronExpression    String?
-  timezone          String   @default("UTC")
-  startAt           DateTime?
-  endAt             DateTime?
-  allowedDays       Json?    // boolean array [true, true, true, true, true, true, true]
-  allowedTimeStart  String?  // "09:00"
-  allowedTimeEnd    String?  // "17:00"
+  scheduleMode     String    @default("preset") // "preset" | "cron"
+  schedulePreset   String? // "daily", "hourly", etc.
+  cronExpression   String?
+  timezone         String    @default("UTC")
+  startAt          DateTime?
+  endAt            DateTime?
+  allowedDays      Json? // boolean array [true, true, true, true, true, true, true]
+  allowedTimeStart String? // "09:00"
+  allowedTimeEnd   String? // "17:00"
 
   // API configuration
-  apiMethod         String   @default("GET")
-  apiUrl            String
-  apiAuth           Json?    // AuthConfig object
-  apiQueryParams    Json?    // KeyValuePair array
-  apiHeaders        Json?    // KeyValuePair array
-  apiBody           String?
-  apiBodyType       String   @default("json") // "json" | "form" | "raw"
-  apiTimeout        Int      @default(30000)
+  apiMethod          String  @default("GET")
+  apiUrl             String
+  apiAuth            Json? // AuthConfig object
+  apiQueryParams     Json? // KeyValuePair array
+  apiHeaders         Json? // KeyValuePair array
+  apiBody            String?
+  apiBodyType        String  @default("json") // "json" | "form" | "raw"
+  apiTimeout         Int     @default(30000)
   apiFollowRedirects Boolean @default(true)
-  apiSuccessCodes   Json?    // number array
-  apiFailureCodes   Json?    // number array
+  apiSuccessCodes    Json? // number array
+  apiFailureCodes    Json? // number array
 
   // Notification configuration
-  notificationTrigger     String   @default("error") // "always" | "error" | "success" | "status_change" | "http_codes"
-  notificationHttpCodes   Json?    // number array
-  notificationRecipients  Json?    // string array
-  notificationSubject     String   @default("{{job.name}} - {{run.state}}")
-  notificationTemplate    String   @default("Job {{job.name}} finished with status {{run.state}}")
-  notificationIncludeLogs Boolean  @default(true)
+  notificationTrigger         String  @default("error") // "always" | "error" | "success" | "status_change" | "http_codes"
+  notificationHttpCodes       Json? // number array
+  notificationRecipients      Json? // string array
+  notificationSubject         String  @default("{{job.name}} - {{run.state}}")
+  notificationTemplate        String  @default("Job {{job.name}} finished with status {{run.state}}")
+  notificationIncludeLogs     Boolean @default(true)
   notificationIncludeResponse Boolean @default(false)
-  notificationMinInterval Int      @default(15) // minutes
-  notificationMaxPerDay   Int      @default(10)
-  notificationDailySummary Boolean @default(false)
+  notificationMinInterval     Int     @default(15) // minutes
+  notificationMaxPerDay       Int     @default(10)
+  notificationDailySummary    Boolean @default(false)
 
   // Execution configuration
-  concurrency       String   @default("skip") // "allow" | "queue" | "skip"
-  timeout           Int      @default(300000)
-  retries           Int      @default(3)
-  backoffType       String   @default("exponential") // "linear" | "exponential"
-  backoffDelay      Int      @default(1000)
-  jitter            Boolean  @default(true)
-  runOnDeploy       Boolean  @default(false)
-  failSafeThreshold Int      @default(5)
+  concurrency       String  @default("skip") // "allow" | "queue" | "skip"
+  timeout           Int     @default(300000)
+  retries           Int     @default(3)
+  backoffType       String  @default("exponential") // "linear" | "exponential"
+  backoffDelay      Int     @default(1000)
+  jitter            Boolean @default(true)
+  runOnDeploy       Boolean @default(false)
+  failSafeThreshold Int     @default(5)
 
-  team          Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  category      JobCategory? @relation(fields: [categoryId], references: [id])
-  runs          JobRun[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  team      Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  category  JobCategory? @relation(fields: [categoryId], references: [id])
+  runs      JobRun[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@index([teamId, status])
 }
@@ -199,7 +215,34 @@ model JobRun {
   exitCode   Int?
   log        String?   @db.Text
 
-  job        Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId, state])
+}
+
+/// -------- Blog --------
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model BlogPost {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String         @unique
+  excerpt     String?        @db.Text
+  content     String         @db.Text
+  coverImage  String?
+  status      BlogPostStatus @default(DRAFT)
+  publishedAt DateTime?
+  authorId    String
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tags        String[]       @default([])
+  views       Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([slug])
 }

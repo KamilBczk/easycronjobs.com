@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, CheckCircle, Users } from "lucide-react";
+import { LayoutDashboard, Calendar, CheckCircle, Users, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 const items = [
   {
@@ -30,10 +32,46 @@ const items = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (session?.user?.email) {
+        try {
+          const res = await fetch(`/api/user/check-admin`);
+          if (res.ok) {
+            const data = await res.json();
+            setIsAdmin(data.isAdmin);
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+        }
+      }
+    };
+
+    checkAdmin();
+  }, [session]);
+
+  const allItems = isAdmin
+    ? [
+        ...items,
+        {
+          title: "Blog Admin",
+          href: "/app/admin",
+          icon: BookOpen,
+        },
+        {
+          title: "Users Admin",
+          href: "/app/admin/users",
+          icon: Users,
+        },
+      ]
+    : items;
 
   return (
     <nav className="flex flex-col space-y-1">
-      {items.map((item) => {
+      {allItems.map((item) => {
         const isActive = pathname === item.href;
         return (
           <Link
